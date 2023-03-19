@@ -16,7 +16,8 @@ def train_player(agent, env, config, save_dir):
             n_turn += 1
             next_state, reward, done = env.step(action)
             if config['debug']:
-                print(f"solution is {env.solution} state is {state} action is {action} reward is {reward} next_state is {next_state} done is {done}")
+                print(
+                    f"solution is {env.solution} state is {state} action is {action} reward is {reward} next_state is {next_state} done is {done}")
             agent.cache(state, next_state, action, reward, done)
             q, loss = agent.learn()
             logger.log_step(reward, loss, q)
@@ -26,8 +27,8 @@ def train_player(agent, env, config, save_dir):
         logger.log_episode()
         if e % config['log_every'] == 0 and e > 0:
             percent_win, average_win_len = evaluate_player(agent, env, num_games_to_evaluate=500)
-            logger.record(episode=e, epsilon=np.round(agent.exploration_rate, 5), step=agent.curr_step, percent_win=percent_win, average_len=average_win_len)
-
+            logger.record(episode=e, epsilon=np.round(agent.exploration_rate, 5), step=agent.curr_step,
+                          percent_win=percent_win, average_len=average_win_len)
 
 
 def evaluate_player(player, env, num_games_to_evaluate):
@@ -58,8 +59,8 @@ def evaluate_player(player, env, num_games_to_evaluate):
     print(f"played {n_games_played} games, won {percent_win}% of games, average game length for wins {average_win_len}")
     return percent_win, average_win_len
 
+
 def play_against_player(save_dir):
     print("think of a 5 letter word, I will try to guess it")
     agent = RLPlayer(save_dir, config, device)
     print(f)
-
