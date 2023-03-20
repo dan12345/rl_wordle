@@ -18,7 +18,7 @@ class GreedyWordlePlayer:
         """ remove all elements that don't align with the evaluation """
         self.possible_solutions = [s for s in self.possible_solutions if self.eval_dict[(s, guess)] == eval]
 
-    def act(self, state, n_turn):
+    def act(self, state, n_turn, force_exploit=False):
         if not n_turn == 1:
             last_guess = state[-2 * self.word_len:-self.word_len]
             last_eval = state[-self.word_len:]

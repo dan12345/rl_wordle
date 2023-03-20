@@ -10,8 +10,7 @@ class MetricLogger:
         self.log_every = config['log_every']
         with open(self.save_log, "w") as f:
             f.write(
-                f"config: {config}\n"
-                f"{'Episode':>8}{'Step':>8}{'WinPercent':>15}{'AvgWinLen':>15}{'Epsilon':>10}{'MeanReward':>15}"
+                f"{'Episode':>8}{'Step':>8}{'WinPercent':>10}{'AvgWinLen':>10}{'Epsilon':>10}{'MeanReward':>15}"
                 f"{'MeanLength':>15}{'MeanLoss':>15}{'MeanQValue':>15}"
                 f"{'TimeDelta':>15}{'Time':>20}\n"
             )
@@ -86,6 +85,8 @@ class MetricLogger:
         print(
             f"Episode {episode} - "
             f"Step {step} - "
+            f"Win Percent {percent_win} - "
+            f"Avg Win Length {average_win_len} -"
             f"Epsilon {epsilon} - "
             f"Mean Reward {mean_ep_reward} - "
             f"Mean Length {mean_ep_length} - "

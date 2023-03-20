@@ -1,6 +1,8 @@
 import numpy as np
-
+import json
 from metric_logger import MetricLogger
+from rl_player import RLPlayer
+from wordle_environment import WordleEnvironment
 
 
 def train_player(agent, env, config, save_dir):
@@ -28,10 +30,10 @@ def train_player(agent, env, config, save_dir):
         if e % config['log_every'] == 0 and e > 0:
             percent_win, average_win_len = evaluate_player(agent, env, num_games_to_evaluate=500)
             logger.record(episode=e, epsilon=np.round(agent.exploration_rate, 5), step=agent.curr_step,
-                          percent_win=percent_win, average_len=average_win_len)
+                          percent_win=percent_win, average_win_len=average_win_len)
 
 
-def evaluate_player(player, env, num_games_to_evaluate):
+def evaluate_player(player, env, num_games_to_evaluate, should_print=False):
     n_games_played = 0
     n_games_won = 0
     sum_game_lengths = 0
@@ -43,7 +45,7 @@ def evaluate_player(player, env, num_games_to_evaluate):
         n_games_played += 1
         while not is_done:
             n_turn += 1
-            new_guess = player.act(state, n_turn)
+            new_guess = player.act(state, n_turn, force_exploit=True)
             state, reward, is_done = env.step(new_guess)
             if is_done:
                 if reward > 0:  # agent won! good job agent
@@ -51,16 +53,48 @@ def evaluate_player(player, env, num_games_to_evaluate):
                     sum_game_lengths += n_turn
                 if i < 5:
                     print("state is %s reward is %s solution is %s" % (state, reward, env.solution))
-        # if n_games_played % 1000 == 0:
-        #     print(f"played {n_games_played} games, won {np.round(n_games_won/n_games_played*100, 1)}% of games, average game length for wins {sum_game_lengths / n_games_won}")
 
-    percent_win = np.round(n_games_won / n_games_played * 100, 1)
-    average_win_len = sum_game_lengths / n_games_won
-    print(f"played {n_games_played} games, won {percent_win}% of games, average game length for wins {average_win_len}")
+    if should_print:
+        print(
+            f"played {n_games_played} games, won {np.round(n_games_won / n_games_played * 100, 1)}% of games, average game length for wins {sum_game_lengths / n_games_won}")
+
+    percent_win = np.round(n_games_won / n_games_played * 100, 3)
+    average_win_len = np.round(sum_game_lengths / n_games_won, 3)
     return percent_win, average_win_len
 
 
-def play_against_player(save_dir):
+def evaluate_saved_player(save_dir, checkpoint, num_games=1000):
+    with open(save_dir + "/config", 'r') as f:
+        config = json.load(f)
+
+    env = WordleEnvironment(config)
+    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    evaluate_player(agent, env, num_games, should_print=True)
+
+
+def play_against_player(save_dir, checkpoint):
+    with open(save_dir + "/config", 'r') as f:
+        config = json.load(f)
+
+    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    n_turn = 0
+    success = False
     print("think of a 5 letter word, I will try to guess it")
-    agent = RLPlayer(save_dir, config, device)
-    print(f)
+    state = '!'
+    while n_turn <= 6 and not success:
+        n_turn += 1
+        action = agent.act(state, n_turn, force_exploit=True)
+        print(f"my guess is {action}, please input the evaluation of my guess")
+        eval = input()
+        state += eval
+        if eval == 'G' * config['word_len']:
+            success = True
+    if success:
+        print(f"I win! I succeeded in guessing {action} in {n_turn} turns")
+    else:
+        print(f"I lose! :(")
+
+
+if __name__ == '__main__':
+    # evaluate_saved_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt', 5000)
+    play_against_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt')

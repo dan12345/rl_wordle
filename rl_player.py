@@ -35,12 +35,16 @@ class DQN(nn.Module):
 
 
 class RLPlayer:
-    def __init__(self, config, device):
+    def __init__(self, config, device, load_path=None):
         self.config = config
         self.device = device
         self.loss_fn = torch.nn.SmoothL1Loss()
         self.possible_guesses = get_words(self.config['word_len'], config['use_only_solutions'])
         self.net = DQN(config, len(self.possible_guesses), device).to(device)
+        if load_path is not None:
+            checkpoint = torch.load(load_path)
+            self.net.load_state_dict(checkpoint['model'])
+            self.exploration_rate = checkpoint['exploration_rate']
         self.optimizer = torch.optim.Adam(self.net.parameters(), config['lr'])
         self.exploration_rate = 1
         self.char_to_idx = {char: idx for idx, char in enumerate(chars)}
@@ -76,11 +80,11 @@ class RLPlayer:
         )
         print(f"WordleNet saved to {save_path} at step {self.curr_step}")
 
-    def act(self, state, _):
+    def act(self, state, _, force_exploit=False):
         state_length = torch.tensor([len(state)]).to(self.device)
         state = self.encode(state)
         state = state.unsqueeze(0)
-        if np.random.rand() < self.exploration_rate:  #
+        if not force_exploit and np.random.rand() < self.exploration_rate:  #
             action_idx = np.random.randint(0, len(self.possible_guesses))
         else:  # exploit
             action_values = self.net(state, state_length-1, model='online').squeeze()
