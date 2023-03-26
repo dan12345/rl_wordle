@@ -13,14 +13,14 @@ class WordleEnvironment:
         self.reward_green = config['reward_green']
         self.rounds_to_failure = config['rounds_to_failure']
         self.state = None
-        self.valid_solutions = get_words(config['word_len'], get_solutions=True)
-        self.valid_guesses = get_words(config['word_len'], config['use_only_solutions'])
+        self.valid_solutions = get_words(config['word_len'], get_solutions=True, num_words_to_take=config['num_words_to_take'])
+        self.valid_guesses = get_words(config['word_len'], config['use_only_solutions'], config['num_words_to_take'])
         self.eval_dict = get_eval_dict(config['word_len'], config['use_only_solutions'])
         self.nround = 0
 
-    def reset(self):
+    def reset(self, sol=None):
         """Initializes a new game with a random solution"""
-        self.solution = random.choice(self.valid_solutions)
+        self.solution = random.choice(self.valid_solutions) if sol is None else sol
         self.nround = 0
         self.state = START_TOKEN
         return self.state

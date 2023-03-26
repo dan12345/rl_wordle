@@ -1,5 +1,6 @@
 import pickle
 
+ABC = 'abcdefghijklmnopqrstuvwxyz'
 START_TOKEN = '!'
 
 
@@ -11,13 +12,19 @@ def get_eval_dict(word_length, use_only_solutions):
     with open(fname, 'rb') as f:
         return pickle.load(f)
 
-def get_words(word_length, get_solutions=True):
+
+def get_words(word_length, get_solutions=True, num_words_to_take=-1):
     if get_solutions:
         fname = f'words/solutions{word_length}.csv'
     else:
         fname = f'words/guesses{word_length}.csv'
     with open(fname, 'r') as f:
-        return f.read().splitlines()
+        words = f.read().splitlines()
+    if num_words_to_take == -1:
+        return words
+    else:
+        return words[:num_words_to_take]
+
 
 def get_eval_dict(word_len, use_only_solutions):
     if use_only_solutions:
@@ -26,6 +33,7 @@ def get_eval_dict(word_len, use_only_solutions):
         fname = f'words/sg{word_len}.pickle'
     with open(fname, 'rb') as f:
         return pickle.load(f)
+
 
 def calc_eval_dict(solutions, guesses, fname):
     """
@@ -65,3 +73,4 @@ def get_eval(sol, guess, eval_dict):
                 res[i] = 'Y'
                 non_green_counts[guess[i]] -= 1
     return "".join(res)
+

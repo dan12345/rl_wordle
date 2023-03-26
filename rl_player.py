@@ -4,11 +4,10 @@ import torch
 import numpy as np
 import torch.nn as nn
 from models import TransformerModel
-from utils import get_words, START_TOKEN
+from utils import get_words, START_TOKEN, ABC
 import copy
 import random
 
-ABC = 'abcdefghijklmnopqrstuvwxyz'
 EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the solution
 PADDING = '.'
 chars = PADDING + ABC + EVAL_CHARS + START_TOKEN
@@ -16,9 +15,9 @@ chars = PADDING + ABC + EVAL_CHARS + START_TOKEN
 
 class DQN(nn.Module):
 
-    def __init__(self, config, n_guesses, device):
+    def __init__(self, config, possible_guess, device):
         super(DQN, self).__init__()
-        self.online = TransformerModel(config, n_guesses, len(chars), device).to(device)
+        self.online = TransformerModel(config, possible_guess, len(chars), device).to(device)
         self.target = copy.deepcopy(self.online)
 
         # Q target parameters should not be updated
@@ -39,8 +38,8 @@ class RLPlayer:
         self.config = config
         self.device = device
         self.loss_fn = torch.nn.SmoothL1Loss()
-        self.possible_guesses = get_words(self.config['word_len'], config['use_only_solutions'])
-        self.net = DQN(config, len(self.possible_guesses), device).to(device)
+        self.possible_guesses = get_words(self.config['word_len'], config['use_only_solutions'], config['num_words_to_take'])
+        self.net = DQN(config, self.possible_guesses, device).to(device)
         if load_path is not None:
             checkpoint = torch.load(load_path)
             self.net.load_state_dict(checkpoint['model'])
@@ -87,7 +86,7 @@ class RLPlayer:
         if not force_exploit and np.random.rand() < self.exploration_rate:  #
             action_idx = np.random.randint(0, len(self.possible_guesses))
         else:  # exploit
-            action_values = self.net(state, state_length-1, model='online').squeeze()
+            action_values = self.net(state, state_length, model='online').squeeze()
             action_idx = torch.argmax(action_values).item()
         self.exploration_rate = max(self.config['exploration_rate_min'],
                                     self.exploration_rate * self.config['exploration_rate_decay'])
@@ -118,14 +117,14 @@ class RLPlayer:
         return states, state_lengths, next_states, next_state_lengths, actions.squeeze(), rewards.squeeze(), dones.squeeze()
 
     def td_estimate(self, state, state_lens, action):
-        current_Q = self.net(state, state_lens-1, model='online')[np.arange(0, self.config['batch_size']), action]  # Q(s,a)
+        current_Q = self.net(state, state_lens, model='online')[np.arange(0, self.config['batch_size']), action]  # Q(s,a)
         return current_Q
 
     @torch.no_grad()
     def td_target(self, next_state, next_state_lens, reward, done):
-        next_state_Q = self.net(next_state, next_state_lens-1, model='online')
+        next_state_Q = self.net(next_state, next_state_lens, model='online')
         best_action = torch.argmax(next_state_Q, axis=1)
-        next_Q = self.net(next_state, next_state_lens-1, model='target')[np.arange(0, self.config['batch_size']), best_action]
+        next_Q = self.net(next_state, next_state_lens, model='target')[np.arange(0, self.config['batch_size']), best_action]
         target_Q = (reward + (1 - done.float()) * self.config['gamma'] * next_Q).float()
         return target_Q
 

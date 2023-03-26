@@ -28,17 +28,17 @@ def train_player(agent, env, config, save_dir):
                 break
         logger.log_episode()
         if e % config['log_every'] == 0 and e > 0:
-            percent_win, average_win_len = evaluate_player(agent, env, num_games_to_evaluate=500)
+            percent_win, average_win_len = evaluate_player(agent, env)
             logger.record(episode=e, epsilon=np.round(agent.exploration_rate, 5), step=agent.curr_step,
                           percent_win=percent_win, average_win_len=average_win_len)
 
 
-def evaluate_player(player, env, num_games_to_evaluate, should_print=False):
+def evaluate_player(player, env, should_print=False):
     n_games_played = 0
     n_games_won = 0
     sum_game_lengths = 0
-    for i in range(num_games_to_evaluate):
-        state = env.reset()
+    for sol in env.valid_solutions:
+        state = env.reset(sol)
         player.reset()
         n_turn = 0
         is_done = False
@@ -51,7 +51,7 @@ def evaluate_player(player, env, num_games_to_evaluate, should_print=False):
                 if reward > 0:  # agent won! good job agent
                     n_games_won += 1
                     sum_game_lengths += n_turn
-                if i < 5:
+                if n_games_played < 5:
                     print("state is %s reward is %s solution is %s" % (state, reward, env.solution))
 
     if should_print:
@@ -59,17 +59,17 @@ def evaluate_player(player, env, num_games_to_evaluate, should_print=False):
             f"played {n_games_played} games, won {np.round(n_games_won / n_games_played * 100, 1)}% of games, average game length for wins {sum_game_lengths / n_games_won}")
 
     percent_win = np.round(n_games_won / n_games_played * 100, 3)
-    average_win_len = np.round(sum_game_lengths / n_games_won, 3)
+    average_win_len = -1 if n_games_won == 0 else np.round(sum_game_lengths / n_games_won, 3)
     return percent_win, average_win_len
 
 
-def evaluate_saved_player(save_dir, checkpoint, num_games=1000):
+def evaluate_saved_player(save_dir, checkpoint):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
 
     env = WordleEnvironment(config)
     agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
-    evaluate_player(agent, env, num_games, should_print=True)
+    evaluate_player(agent, env, should_print=True)
 
 
 def play_against_player(save_dir, checkpoint):
@@ -97,4 +97,4 @@ def play_against_player(save_dir, checkpoint):
 
 if __name__ == '__main__':
     # evaluate_saved_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt', 5000)
-    play_against_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt')
+    evaluate_saved_player('checkpoints/2023-03-23T11-21-10', 'wordle_net_20.chkpt')

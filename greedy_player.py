@@ -7,7 +7,7 @@ class GreedyWordlePlayer:
 
     def __init__(self, config):
         self.word_len = config['word_len']
-        self.all_solutions = get_words(self.word_len, config['use_only_solutions'])
+        self.all_solutions = get_words(self.word_len, config['use_only_solutions'], config['num_words_to_take'])
         self.possible_solutions = self.all_solutions.copy()  # copy of all solutions, so that we can remove words from it
         self.eval_dict = get_eval_dict(self.word_len, config['use_only_solutions'])
 

@@ -3,19 +3,30 @@ import torch
 import math
 from torch.nn import functional as F
 
+from utils import ABC
+
 
 class TransformerModel(nn.Module):
 
-    def __init__(self, config, n_guesses, n_chars, device):
+    def __init__(self, config, possible_guesses, n_chars, device):
         super().__init__()
         self.config = config
+        n_guesses = len(possible_guesses)
         self.token_embedding_table = nn.Embedding(n_chars, config['n_embd'])
         # each round need double the characters in order to contain eval result
         max_sequence_size = config['word_len'] * 2 * config['rounds_to_failure'] + 1
         self.position_embedding_table = nn.Embedding(max_sequence_size, config['n_embd'])
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config['n_layer'])])
         self.ln_f = nn.LayerNorm(config['n_embd'])  # final layer norm
-        self.lm_head = nn.Linear(config['n_embd'], n_guesses)
+        if False: #config['pre_calc_guess_emb']:
+            self.guess_embedding_table = torch.zeros(n_guesses, ABC * config['word_len'],  device=device, requires_grad=False)
+            for i in range(0, n_guesses):
+                for j in range(0, len(ABC)):
+                    if possible_guesses[i][j] == ABC[j]:
+                        self.guess_embedding_table[i][j] = 1
+            self.proj = nn.Linear(ABC * config['word_len'], config['n_embd'])
+        else:
+            self.lm_head = nn.Linear(config['n_embd'], n_guesses)
         self.apply(self._init_weights)
         print("transformer model initialized, number parameters = ",
               sum(p.numel() for p in self.parameters() if p.requires_grad))
@@ -37,8 +48,12 @@ class TransformerModel(nn.Module):
         x = tok_emb + pos_emb  # (B,T,C)
         x = self.blocks(x)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
-        logits = self.lm_head(x)[torch.arange(B), lens, :]  # get rid of all dimensions besides the last which we care about. see todo
-        return logits
+        if False: #self.config['pre_calc_guess_emb']:
+            logits = None
+        else:
+            logits = self.lm_head(x)
+        # get rid of all dimensions besides the last which we care about. We substract 1, since if the state is of length 1 we want the 0'th logit
+        return logits[torch.arange(B), lens-1, :]
 
 
 class Block(nn.Module):
