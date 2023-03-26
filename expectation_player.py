@@ -28,9 +28,9 @@ class ExpectationPlayer:
             self.filter_possible_solutions(last_guess, last_eval)
             assert (len(self.possible_solutions) > 0)
         else:
-            if self.config.num_words_to_take != -1 and self.word_len in BEST_FIRST_GUESS:
-                return BEST_FIRST_GUESS[
-                    self.word_len]  # found by best first guess by running below once, here to save time
+            if self.config['num_words_to_take'] == -1 and self.word_len in BEST_FIRST_GUESS:
+                return BEST_FIRST_GUESS[self.word_len]
+                # found by best first guess by running below once, here to save time
         best_solution = None
         for possible_guess in self.possible_solutions:
             num_remaining = 0

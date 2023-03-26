@@ -24,7 +24,7 @@ num_words_to_take = 100
 rounds_to_failure = 6
 sync_every = 1000
 lr = 0.00025
-gamma = 0.7
+gamma = 0.6
 n_embd = 32
 n_head = 2
 n_layer = 4
@@ -40,7 +40,7 @@ memory_size = 5000
 save_dir = Path("checkpoints") / datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 save_dir.mkdir(parents=True)
 debug = False
-pre_calc_guess_emb = False
+pre_calc_guess_emb = True
 # create config variable from global variables (except for those starting with _)
 def override_config():
     for arg in sys.argv[1:]:
@@ -73,13 +73,13 @@ device = 'cpu'
 env = WordleEnvironment(config)
 
 # get greedy score for comparison
-greedy_agent = GreedyWordlePlayer(config)
-print("evaluating greedy agent")
-__ = evaluate_player(greedy_agent, env, should_print=True)
+# greedy_agent = GreedyWordlePlayer(config)
+# print("evaluating greedy agent")
+# __ = evaluate_player(greedy_agent, env, should_print=True)
 
-expectation_player = ExpectationPlayer(config)
-print("evaluating expectation agent")
-__ = evaluate_player(expectation_player, env, should_print=True)
+# expectation_player = ExpectationPlayer(config)
+# print("evaluating expectation agent")
+# __ = evaluate_player(expectation_player, env, should_print=True)
 
 # now train RL agent
 agent = GreedyWordlePlayer(config) if config['greedy_player'] else RLPlayer(config, device)

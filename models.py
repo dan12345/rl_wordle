@@ -18,13 +18,17 @@ class TransformerModel(nn.Module):
         self.position_embedding_table = nn.Embedding(max_sequence_size, config['n_embd'])
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config['n_layer'])])
         self.ln_f = nn.LayerNorm(config['n_embd'])  # final layer norm
-        if False: #config['pre_calc_guess_emb']:
-            self.guess_embedding_table = torch.zeros(n_guesses, ABC * config['word_len'],  device=device, requires_grad=False)
-            for i in range(0, n_guesses):
-                for j in range(0, len(ABC)):
-                    if possible_guesses[i][j] == ABC[j]:
-                        self.guess_embedding_table[i][j] = 1
-            self.proj = nn.Linear(ABC * config['word_len'], config['n_embd'])
+        if config['pre_calc_guess_emb']:
+            # create a matrix where each row represents a binary vector of a possible guess based on the its character breakdown
+            self.guess_embedding_table = torch.zeros(n_guesses, len(ABC) * config['word_len'], device=device, requires_grad=False)
+            for i, guess in enumerate(possible_guesses):
+                for j, c in enumerate(ABC):
+                    for k in range(config['word_len']):
+                        if guess[k] == c:
+                            self.guess_embedding_table[i][j * config['word_len'] + k] = 1
+
+            # projection to let the model decide how it want to use the precalced embeddings
+            self.proj = nn.Linear(len(ABC) * config['word_len'], config['n_embd'])
         else:
             self.lm_head = nn.Linear(config['n_embd'], n_guesses)
         self.apply(self._init_weights)
@@ -48,8 +52,9 @@ class TransformerModel(nn.Module):
         x = tok_emb + pos_emb  # (B,T,C)
         x = self.blocks(x)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
-        if False: #self.config['pre_calc_guess_emb']:
-            logits = None
+        if self.config['pre_calc_guess_emb']:
+            guess_embeddings = self.proj(self.guess_embedding_table)  # (n_guesses, C)
+            logits = x @ guess_embeddings.t()  # (B,T,n_guesses)
         else:
             logits = self.lm_head(x)
         # get rid of all dimensions besides the last which we care about. We substract 1, since if the state is of length 1 we want the 0'th logit
