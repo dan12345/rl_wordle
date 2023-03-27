@@ -33,7 +33,7 @@ def train_player(agent, env, config, save_dir):
                           percent_win=percent_win, average_win_len=average_win_len)
 
 
-def evaluate_player(player, env, should_print=False):
+def evaluate_player(player, env, should_print=False, print_failures=False):
     n_games_played = 0
     n_games_won = 0
     sum_game_lengths = 0
@@ -51,9 +51,10 @@ def evaluate_player(player, env, should_print=False):
                 if reward > 0:  # agent won! good job agent
                     n_games_won += 1
                     sum_game_lengths += n_turn
+                if print_failures and reward < 0:
+                    print("state is %s reward is %s solution is %s" % (state, reward, env.solution))
                 if n_games_played < 5:
                     print("state is %s reward is %s solution is %s" % (state, reward, env.solution))
-
     if should_print:
         print(
             f"played {n_games_played} games, won {np.round(n_games_won / n_games_played * 100, 1)}% of games, average game length for wins {sum_game_lengths / n_games_won}")
@@ -66,10 +67,10 @@ def evaluate_player(player, env, should_print=False):
 def evaluate_saved_player(save_dir, checkpoint):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
-
+    print(config)
     env = WordleEnvironment(config)
     agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
-    evaluate_player(agent, env, should_print=True)
+    evaluate_player(agent, env, should_print=True, print_failures=True)
 
 
 def play_against_player(save_dir, checkpoint):
@@ -97,4 +98,4 @@ def play_against_player(save_dir, checkpoint):
 
 if __name__ == '__main__':
     # evaluate_saved_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt', 5000)
-    evaluate_saved_player('checkpoints/2023-03-23T11-21-10', 'wordle_net_20.chkpt')
+    evaluate_saved_player('checkpoints/2023-03-25T22-54-32', 'wordle_net_6.chkpt')

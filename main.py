@@ -32,7 +32,7 @@ dropout = 0
 save_every = 100000
 log_every = 10000
 burnin = 5000
-learn_every = 1
+learn_every = 3
 exploration_rate_decay = 0.999997
 exploration_rate_min = 0.05
 batch_size = 32
@@ -41,6 +41,7 @@ save_dir = Path("checkpoints") / datetime.datetime.now().strftime("%Y-%m-%dT%H-%
 save_dir.mkdir(parents=True)
 debug = False
 pre_calc_guess_emb = True
+device = 'cpu'
 # create config variable from global variables (except for those starting with _)
 def override_config():
     for arg in sys.argv[1:]:
@@ -68,7 +69,7 @@ with open(save_dir / "config", 'w') as f:
     json.dump(config, f)
 config['save_dir'] = save_dir
 print(f"config = {config}")
-device = 'cpu'
+
 
 env = WordleEnvironment(config)
 
