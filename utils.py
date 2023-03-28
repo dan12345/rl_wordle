@@ -2,6 +2,9 @@ import pickle
 
 ABC = 'abcdefghijklmnopqrstuvwxyz'
 START_TOKEN = '!'
+EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the solution
+PADDING = '.'
+CHARS = PADDING + ABC + EVAL_CHARS + START_TOKEN
 
 
 def get_eval_dict(word_length, use_only_solutions):

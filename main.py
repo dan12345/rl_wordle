@@ -33,8 +33,8 @@ save_every = 100000
 log_every = 10000
 burnin = 5000
 learn_every = 3
-exploration_rate_decay = 0.999997
-exploration_rate_min = 0.05
+exploration_rate_decay = 0.999999
+exploration_rate_min = 0.08
 batch_size = 32
 memory_size = 5000
 save_dir = Path("checkpoints") / datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
@@ -42,6 +42,7 @@ save_dir.mkdir(parents=True)
 debug = False
 pre_calc_guess_emb = True
 device = 'cpu'
+average_out_words = False
 # create config variable from global variables (except for those starting with _)
 def override_config():
     for arg in sys.argv[1:]:
@@ -73,11 +74,11 @@ print(f"config = {config}")
 
 env = WordleEnvironment(config)
 
-# get greedy score for comparison
+# # get greedy score for comparison
 # greedy_agent = GreedyWordlePlayer(config)
 # print("evaluating greedy agent")
 # __ = evaluate_player(greedy_agent, env, should_print=True)
-
+#
 # expectation_player = ExpectationPlayer(config)
 # print("evaluating expectation agent")
 # __ = evaluate_player(expectation_player, env, should_print=True)

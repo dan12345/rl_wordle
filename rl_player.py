@@ -4,20 +4,17 @@ import torch
 import numpy as np
 import torch.nn as nn
 from models import TransformerModel
-from utils import get_words, START_TOKEN, ABC
+from utils import get_words, CHARS, START_TOKEN
 import copy
 import random
 
-EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the solution
-PADDING = '.'
-chars = PADDING + ABC + EVAL_CHARS + START_TOKEN
 
 
 class DQN(nn.Module):
 
     def __init__(self, config, possible_guess, device):
         super(DQN, self).__init__()
-        self.online = TransformerModel(config, possible_guess, len(chars), device).to(device)
+        self.online = TransformerModel(config, possible_guess, len(CHARS), device).to(device)
         self.target = copy.deepcopy(self.online)
 
         # Q target parameters should not be updated
@@ -46,7 +43,7 @@ class RLPlayer:
             self.exploration_rate = checkpoint['exploration_rate']
         self.optimizer = torch.optim.Adam(self.net.parameters(), config['lr'])
         self.exploration_rate = 1
-        self.char_to_idx = {char: idx for idx, char in enumerate(chars)}
+        self.char_to_idx = {char: idx for idx, char in enumerate(CHARS)}
         self.guess_to_idx = {guess: idx for idx, guess in enumerate(self.possible_guesses)}
         self.curr_step = 0
         self.memory = deque(maxlen=config['memory_size'])
@@ -102,13 +99,18 @@ class RLPlayer:
         return tensor
 
     def cache(self, state, next_state, action, reward, done):
-        state_length = torch.tensor(len(state)).to(self.device)
-        next_state_length = torch.tensor(len(next_state)).to(self.device)
+        state_length = torch.tensor(len(state), device=self.device)
         state = self.encode(state)
-        next_state = self.encode(next_state)
+        if done:  # if done, then we won't need to calculate the next state Q value so we can just use a dummy value
+            next_state = self.encode(START_TOKEN)
+            next_state_length = torch.tensor(1, device=self.device)
+        else:
+            next_state_length = torch.tensor(len(next_state)).to(self.device)
+            next_state = self.encode(next_state)
         action = torch.tensor([self.guess_to_idx[action]], dtype=torch.long).to(self.device)
         reward = torch.tensor([reward], dtype=torch.long).to(self.device)
         done = torch.tensor([done], dtype=torch.long).to(self.device)
+
         self.memory.append((state, state_length, next_state, next_state_length, action, reward, done))
 
     def recall(self):
