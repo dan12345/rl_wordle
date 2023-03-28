@@ -93,7 +93,7 @@ class TransformerModel(nn.Module):
         num_mini_states = []  # keep track so we know what to average afterwards
         for i in range(len(states)):
             if lens[i] == 1:
-                new_batch = torch.cat((new_batch, torch.ones(1, self.max_sequence_size, dtype=torch.int64) * self.char_to_idx[START_TOKEN]), 0)  # this is ugly, I guess it should work but not sure
+                new_batch = torch.cat((new_batch, torch.ones(1, self.max_sequence_size, dtype=torch.int64, device=self.device) * self.char_to_idx[START_TOKEN]), 0)  # this is ugly, I guess it should work but not sure
                 num_mini_states.append(1)
             else:
                 n_word_evals = (lens[i] - 1) // self.max_sequence_size  # number of word + word evaluations, each one will be a mini state
