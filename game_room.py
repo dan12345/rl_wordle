@@ -37,6 +37,7 @@ def evaluate_player(player, env, should_print=False, print_failures=False):
     n_games_played = 0
     n_games_won = 0
     sum_game_lengths = 0
+    dist = {i: 0 for i in range(1, 7)}
     for sol in env.valid_solutions:
         state = env.reset(sol)
         player.reset()
@@ -51,11 +52,14 @@ def evaluate_player(player, env, should_print=False, print_failures=False):
                 if reward > 0:  # agent won! good job agent
                     n_games_won += 1
                     sum_game_lengths += n_turn
-                if print_failures and reward < 0:
+                    dist[n_turn] += 1
+                if print_failures: # and reward < 0:
                     print("state is %s reward is %s solution is %s" % (state, reward, env.solution))
                 if n_games_played < 5:
                     print("state is %s reward is %s solution is %s" % (state, reward, env.solution))
     if should_print:
+        dist = {k: np.round(v / n_games_played * 100, 1) for k, v in dist.items()}
+        print(f"win distribution is {dist}")
         print(
             f"played {n_games_played} games, won {np.round(n_games_won / n_games_played * 100, 1)}% of games, average game length for wins {sum_game_lengths / n_games_won}")
 
@@ -96,6 +100,23 @@ def play_against_player(save_dir, checkpoint):
         print(f"I lose! :(")
 
 
+def debug_q_values_of_saved_model(s, save_dir, checkpoint):
+    with open(save_dir + "/config", 'r') as f:
+        config = json.load(f)
+    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    words_qs = agent.debug_q_values_of_state(s)
+    print(f"for state {s} the q values are: ")
+    for word, q in sorted(words_qs, key=lambda x: x[1], reverse=True):
+        print(f"{word} {q}")
+
+
 if __name__ == '__main__':
     # evaluate_saved_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt', 5000)
-    evaluate_saved_player('checkpoints/2023-03-25T22-54-32', 'wordle_net_6.chkpt')
+
+    import datetime
+    now = datetime.datetime.now()
+
+    evaluate_saved_player('checkpoints/2023-03-29T20-02-25/', 'wordle_net_12.chkpt')
+    # debug_q_values_of_saved_model('!crimeGGWWWcrankGGWWWcrossGGWGWcrashGGWGG', 'checkpoints/2023-03-29T20-02-25/', 'wordle_net_12.chkpt')
+
+    print((datetime.datetime.now() - now).total_seconds())

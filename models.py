@@ -14,8 +14,11 @@ class TransformerModel(nn.Module):
         n_guesses = len(possible_guesses)
         self.token_embedding_table = nn.Embedding(n_chars, config['n_embd'])
         # each round need double the characters in order to contain eval result
-        max_sequence_size = config['word_len'] * 2 * config['rounds_to_failure'] + 1
-        self.position_embedding_table = nn.Embedding(max_sequence_size, config['n_embd'])
+        if config['average_out_words']:
+            self.max_sequence_size = config['word_len'] * 2
+        else:
+            self.max_sequence_size = config['word_len'] * 2 * config['rounds_to_failure'] + 1
+        self.position_embedding_table = nn.Embedding(self.max_sequence_size, config['n_embd'])
         self.blocks = nn.Sequential(*[Block(config) for _ in range(config['n_layer'])])
         self.ln_f = nn.LayerNorm(config['n_embd'])  # final layer norm
         self.char_to_idx = {char: idx for idx, char in enumerate(CHARS)}
@@ -48,19 +51,51 @@ class TransformerModel(nn.Module):
     def forward(self, states, lens):
         B, T = states.shape
         # idx and targets are both (B,T) tensor of integers
+        if self.config['average_out_words']:
+            states, n_words_mini_states = self.build_new_states(states, lens)
         tok_emb = self.token_embedding_table(states)  # (B,T,C)
-        pos_emb = self.position_embedding_table(torch.arange(T, device=self.device))  # (T,C)
+        pos_emb = self.position_embedding_table(torch.arange(self.max_sequence_size, device=self.device))  # (T,C)
         x = tok_emb + pos_emb  # (B,T,C)
         x = self.blocks(x)  # (B,T,C)
         x = self.ln_f(x)  # (B,T,C)
         # get rid of all dimensions besides the last which we care about. We substract 1, since if the state is of length 1 we want the 0'th logit
-        x = x[torch.arange(B), lens - 1, :]  # (B,C)
+        if self.config['average_out_words']:
+            x = x[:, -1, :]  # (B,C)
+            x = self.average_out_mini_states(x, n_words_mini_states)
+        else:
+            x = x[torch.arange(B), lens - 1, :]  # (B,C)
         if self.config['pre_calc_guess_emb']:
             guess_embeddings = self.proj(self.guess_embedding_table)  # (n_guesses, C)
             logits = x @ guess_embeddings.t()  # (B,T,n_guesses)
         else:
             logits = self.lm_head(x)
         return logits
+
+    def average_out_mini_states(self, x, n_word_mini_states):
+        new_x = torch.tensor([], device=self.device)
+        idx = 0
+        for n_word_evals in n_word_mini_states:
+            next_idx = idx + n_word_evals
+            avg = torch.mean(x[idx:(idx + next_idx), :], 0, keepdim=True)
+            new_x = torch.cat((new_x, avg), 0)
+            idx = next_idx
+        return new_x
+
+    def build_new_states(self, states, lens):
+        # built a new batch composed of single word evaluation
+        new_batch = torch.tensor([], device=self.device, dtype=torch.int64)
+        num_mini_states = []  # keep track so we know what to average afterwards
+        for i in range(len(states)):
+            if lens[i] == 1:
+                new_batch = torch.cat((new_batch, torch.ones(1, self.max_sequence_size, dtype=torch.int64) * self.char_to_idx[START_TOKEN]), 0)  # this is ugly, I guess it should work but not sure
+                num_mini_states.append(1)
+            else:
+                n_word_evals = (lens[i] - 1) // self.max_sequence_size  # number of word + word evaluations, each one will be a mini state
+                split_states = states[i, 1:lens[i]].view(n_word_evals, self.max_sequence_size)
+                new_batch = torch.cat((new_batch, split_states), 0)
+                num_mini_states.append(n_word_evals)
+        return new_batch, num_mini_states
+
 
 
 class Block(nn.Module):
@@ -106,7 +141,10 @@ class CausalSelfAttention(nn.Module):
         # output projection
         self.c_proj = nn.Linear(config['n_embd'], config['n_embd'])
         # regularization
-        max_sequence_size = config['word_len'] * config['rounds_to_failure'] * 2 + 1
+        if config['average_out_words']:
+            max_sequence_size = config['word_len'] * 2
+        else:
+            max_sequence_size = config['word_len'] * 2 * config['rounds_to_failure'] + 1
         self.register_buffer("bias", torch.tril(torch.ones(max_sequence_size, max_sequence_size))
                              .view(1, 1, max_sequence_size, max_sequence_size))
         self.attn_dropout = nn.Dropout(config['dropout'])

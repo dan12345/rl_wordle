@@ -17,6 +17,7 @@ class WordleEnvironment:
         self.valid_guesses = get_words(config['word_len'], config['use_only_solutions'], config['num_words_to_take'])
         self.eval_dict = get_eval_dict(config['word_len'], config['use_only_solutions'])
         self.nround = 0
+        self.config = config
 
     def reset(self, sol=None):
         """Initializes a new game with a random solution"""
@@ -39,5 +40,8 @@ class WordleEnvironment:
         assert((self.solution, guess) in self.eval_dict)
         eval = self.eval_dict[(self.solution, guess)]
         self.state = self.state + eval
-        reward = eval.count('Y') * self.reward_yellow + eval.count('G') * self.reward_green
+        if self.config['max_turn_to_give_non_success_rewards'] == -1 or self.nround <= self.config['max_turn_to_give_non_success_rewards']:
+            reward = eval.count('Y') * self.reward_yellow + eval.count('G') * self.reward_green
+        else:
+            reward = 0
         return self.state, reward, False

@@ -43,6 +43,8 @@ debug = False
 pre_calc_guess_emb = True
 device = 'cpu'
 average_out_words = False
+max_turn_to_give_non_success_rewards = -1
+sample_from_top_n = -1
 # create config variable from global variables (except for those starting with _)
 def override_config():
     for arg in sys.argv[1:]:

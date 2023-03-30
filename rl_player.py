@@ -83,8 +83,14 @@ class RLPlayer:
         state_length = torch.tensor([len(state)]).to(self.device)
         state = self.encode(state)
         state = state.unsqueeze(0)
-        if not force_exploit and np.random.rand() < self.exploration_rate:  #
-            action_idx = np.random.randint(0, len(self.possible_guesses))
+        rand = np.random.rand()
+        if not force_exploit and rand < self.exploration_rate:
+            if self.config['sample_from_top_n'] != -1 and rand < self.exploration_rate / 2:  # half of exploration explore top possibility
+                action_values = self.net(state, state_length, model='online').squeeze()
+                top_k = torch.topk(action_values, self.config['sample_from_top_n'])[1]
+                action_idx = top_k[np.random.randint(0, len(top_k))]
+            else:
+                action_idx = np.random.randint(0, len(self.possible_guesses))
         else:  # exploit
             action_values = self.net(state, state_length, model='online').squeeze()
             action_idx = torch.argmax(action_values).item()
@@ -95,10 +101,10 @@ class RLPlayer:
         return self.possible_guesses[action_idx]
 
     def encode(self, state):
-        tensor = torch.tensor([self.char_to_idx[c] for c in state]).to(self.device)
+        tensor = torch.tensor([self.char_to_idx[c] for c in state], requires_grad=False).to(self.device)
         # pad tensor to max length
         max_len = self.config['word_len'] * 2 * self.config['rounds_to_failure'] + 1
-        tensor = torch.cat((tensor, torch.zeros(max_len - len(state), dtype=torch.long).to(self.device))) #0 -> PADDING
+        tensor = torch.cat((tensor, torch.ones(max_len - len(state), dtype=torch.long, requires_grad=False).to(self.device) * self.char_to_idx[PADDING]))
         return tensor
 
     def cache(self, state, next_state, action, reward, done):
@@ -142,3 +148,10 @@ class RLPlayer:
 
     def sync_Q_target(self):
         self.net.target.load_state_dict(self.net.online.state_dict())
+
+    def debug_q_values_of_state(self, state):
+        state_length = torch.tensor([len(state)]).to(self.device)
+        state = self.encode(state)
+        state = state.unsqueeze(0)
+        action_values = self.net(state, state_length, model='online').squeeze().tolist()
+        return zip(self.possible_guesses, action_values)
