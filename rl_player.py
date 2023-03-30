@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from models import TransformerModel
-from utils import get_words, CHARS, START_TOKEN
+from utils import get_words, CHARS, START_TOKEN, ABC
 import copy
 import random
 
