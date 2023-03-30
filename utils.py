@@ -6,7 +6,6 @@ EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the so
 PADDING = '.'
 CHARS = PADDING + ABC + EVAL_CHARS + START_TOKEN
 
-
 def get_eval_dict(word_length, use_only_solutions):
     if use_only_solutions:
         fname = f'words/ss{word_length}.pickle'

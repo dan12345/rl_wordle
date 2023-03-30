@@ -8,6 +8,9 @@ from utils import get_words, CHARS, START_TOKEN
 import copy
 import random
 
+EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the solution
+PADDING = '.'
+chars = PADDING + ABC + EVAL_CHARS + START_TOKEN
 
 
 class DQN(nn.Module):
@@ -101,7 +104,7 @@ class RLPlayer:
     def cache(self, state, next_state, action, reward, done):
         state_length = torch.tensor(len(state), device=self.device)
         state = self.encode(state)
-        if done:  # if done, then we won't need to calculate the next state Q value so we can just use a dummy value
+        if done:  # if done, then we won't need to calculate the next state Q value, so we can just use a dummy value
             next_state = self.encode(START_TOKEN)
             next_state_length = torch.tensor(1, device=self.device)
         else:
@@ -110,8 +113,8 @@ class RLPlayer:
         action = torch.tensor([self.guess_to_idx[action]], dtype=torch.long).to(self.device)
         reward = torch.tensor([reward], dtype=torch.long).to(self.device)
         done = torch.tensor([done], dtype=torch.long).to(self.device)
-
         self.memory.append((state, state_length, next_state, next_state_length, action, reward, done))
+
 
     def recall(self):
         batch = random.sample(self.memory, self.config['batch_size'])
