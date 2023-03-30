@@ -42,6 +42,8 @@ save_dir.mkdir(parents=True)
 debug = False
 pre_calc_guess_emb = True
 device = 'cpu'
+if torch.cuda.is_available():
+    device = 'cuda'
 average_out_words = False
 max_turn_to_give_non_success_rewards = -1
 sample_from_top_n = -1
