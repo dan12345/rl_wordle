@@ -76,7 +76,7 @@ class TransformerModel(nn.Module):
         idx = 0
         for n_word_evals in n_word_mini_states:
             next_idx = idx + n_word_evals
-            avg = torch.mean(x[idx:(idx + next_idx), :], 0, keepdim=True)
+            avg = torch.mean(x[idx:next_idx, :], 0, keepdim=True)
             new_x = torch.cat((new_x, avg), 0)
             idx = next_idx
         return new_x
