@@ -38,7 +38,8 @@ class RLPlayer:
         self.config = config
         self.device = device
         self.loss_fn = torch.nn.SmoothL1Loss()
-        self.possible_guesses = get_words(self.config['word_len'], config['use_only_solutions'], config['num_words_to_take'])
+        self.possible_guesses = get_words(self.config['word_len'], config['use_only_solutions'],
+                                          config['num_words_to_take'])
         self.net = DQN(config, self.possible_guesses, device).to(device)
         if load_path is not None:
             checkpoint = torch.load(load_path)
@@ -84,8 +85,8 @@ class RLPlayer:
         state = self.encode(state)
         state = state.unsqueeze(0)
         rand = np.random.rand()
-        if not force_exploit and rand < self.exploration_rate: # 0.99^2 -> 0.9801
-            if self.config['sample_from_top_n'] != -1 and rand < (1 - self.exploration_rate ^ 2):  # slowly converge to greedy exploration
+        if not force_exploit and rand < self.exploration_rate:  # 0.99^2 -> 0.9801
+            if self.config['sample_from_top_n'] != -1 and rand > self.get_greedy_exploration_cutoff():
                 action_values = self.net(state, state_length, model='online').squeeze()
                 top_k = torch.topk(action_values, self.config['sample_from_top_n'])[1]
                 action_idx = top_k[np.random.randint(0, len(top_k))]
@@ -100,11 +101,19 @@ class RLPlayer:
 
         return self.possible_guesses[action_idx]
 
+    def get_greedy_exploration_cutoff(self):
+        if self.config['more_greedy_exploration']:  # converge to mostly greedy exploration
+            return self.exploration_rate ^ 2
+        else:
+            return self.exploration_rate / 2  # half-and-half
+
     def encode(self, state):
         tensor = torch.tensor([self.char_to_idx[c] for c in state], requires_grad=False).to(self.device)
         # pad tensor to max length
         max_len = self.config['word_len'] * 2 * self.config['rounds_to_failure'] + 1
-        tensor = torch.cat((tensor, torch.ones(max_len - len(state), dtype=torch.long, requires_grad=False).to(self.device) * self.char_to_idx[PADDING]))
+        tensor = torch.cat((tensor,
+                            torch.ones(max_len - len(state), dtype=torch.long, requires_grad=False).to(self.device) *
+                            self.char_to_idx[PADDING]))
         return tensor
 
     def cache(self, state, next_state, action, reward, done):
@@ -121,14 +130,14 @@ class RLPlayer:
         done = torch.tensor([done], dtype=torch.long).to(self.device)
         self.memory.append((state, state_length, next_state, next_state_length, action, reward, done))
 
-
     def recall(self):
         batch = random.sample(self.memory, self.config['batch_size'])
         states, state_lengths, next_states, next_state_lengths, actions, rewards, dones = map(torch.stack, zip(*batch))
         return states, state_lengths, next_states, next_state_lengths, actions.squeeze(), rewards.squeeze(), dones.squeeze()
 
     def td_estimate(self, state, state_lens, action):
-        current_Q = self.net(state, state_lens, model='online')[np.arange(0, self.config['batch_size']), action]  # Q(s,a)
+        current_Q = self.net(state, state_lens, model='online')[
+            np.arange(0, self.config['batch_size']), action]  # Q(s,a)
         return current_Q
 
     @torch.no_grad()
