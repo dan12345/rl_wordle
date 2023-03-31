@@ -42,7 +42,11 @@ class RLPlayer:
                                           config['num_words_to_take'])
         self.net = DQN(config, self.possible_guesses, device).to(device)
         if load_path is not None:
-            checkpoint = torch.load(load_path)
+            if torch.cuda.is_available():
+                map_location = lambda storage, loc: storage.cuda()
+            else:
+                map_location = 'cpu'
+            checkpoint = torch.load(load_path, map_location=map_location)
             self.net.load_state_dict(checkpoint['model'])
             self.exploration_rate = checkpoint['exploration_rate']
         self.optimizer = torch.optim.Adam(self.net.parameters(), config['lr'])
@@ -103,7 +107,7 @@ class RLPlayer:
 
     def get_greedy_exploration_cutoff(self):
         if self.config['more_greedy_exploration']:  # converge to mostly greedy exploration
-            return self.exploration_rate ^ 2
+            return self.exploration_rate ** 2
         else:
             return self.exploration_rate / 2  # half-and-half
 
