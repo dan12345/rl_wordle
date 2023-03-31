@@ -84,8 +84,8 @@ class RLPlayer:
         state = self.encode(state)
         state = state.unsqueeze(0)
         rand = np.random.rand()
-        if not force_exploit and rand < self.exploration_rate:
-            if self.config['sample_from_top_n'] != -1 and rand < self.exploration_rate / 2:  # half of exploration explore top possibility
+        if not force_exploit and rand < self.exploration_rate: # 0.99^2 -> 0.9801
+            if self.config['sample_from_top_n'] != -1 and rand < (1 - self.exploration_rate ^ 2):  # slowly converge to greedy exploration
                 action_values = self.net(state, state_length, model='online').squeeze()
                 top_k = torch.topk(action_values, self.config['sample_from_top_n'])[1]
                 action_idx = top_k[np.random.randint(0, len(top_k))]
