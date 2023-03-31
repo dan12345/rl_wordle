@@ -130,7 +130,10 @@ class RLPlayer:
             next_state_length = torch.tensor(len(next_state)).to(self.device)
             next_state = self.encode(next_state)
         action = torch.tensor([self.guess_to_idx[action]], dtype=torch.long).to(self.device)
-        reward = torch.tensor([reward], dtype=torch.long).to(self.device)
+        if self.config['apply_reward_fix']:
+            reward = torch.tensor([reward], dtype=torch.float).to(self.device)
+        else:
+            reward = torch.tensor([reward], dtype=torch.long).to(self.device)
         done = torch.tensor([done], dtype=torch.long).to(self.device)
         self.memory.append((state, state_length, next_state, next_state_length, action, reward, done))
 

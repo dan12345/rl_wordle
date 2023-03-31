@@ -37,6 +37,7 @@ class MetricLogger:
 
         # Timing
         self.record_time = time.time()
+        self.start_time = time.time()
 
     def log_step(self, reward, loss, q):
         self.curr_ep_reward += reward
@@ -81,6 +82,8 @@ class MetricLogger:
         last_record_time = self.record_time
         self.record_time = time.time()
         time_since_last_record = np.round(self.record_time - last_record_time, 3)
+        #get time since start
+        time_since_start = np.round(self.record_time - self.start_time, 3)
 
         print(
             f"Episode {episode} - "
@@ -94,6 +97,7 @@ class MetricLogger:
             f"Mean Q Value {mean_ep_q} - "
             f"Time Delta {time_since_last_record} - "
             f"Time {datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}"
+            f"Time since start {time_since_start}"
         )
 
         with open(self.save_log, "a") as f:

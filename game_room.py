@@ -115,8 +115,11 @@ if __name__ == '__main__':
 
     import datetime
     now = datetime.datetime.now()
-
-    evaluate_saved_player('checkpoints/best_500_from_collab_83_2_success/', 'wordle_net_62.chkpt')
-    # debug_q_values_of_saved_model('!crimeGGWWWcrankGGWWWcrossGGWGWcrashGGWGG', 'checkpoints/2023-03-29T20-02-25/', 'wordle_net_12.chkpt')
+    dir_name = 'checkpoints/best_500_from_collab_83_2_success/'
+    file = 'wordle_net_62.chkpt'
+    evaluate_saved_player(dir_name, file)
+    #!craneGGWWWcrispGGWWWcrispGGWWWcrossGGWWWcrudeGGGWWagony
+    #!craneGGWWWcrispGGWWWcrispGGWWWcrossGGWWWcrudeGGGWWagony reward is -15 solution is crumb
+    # debug_q_values_of_saved_model('!craneGGWWWcrispGGWWWcrispGGWWWcrossGGWWWcrudeGGWWW', dir_name, file)
 
     print((datetime.datetime.now() - now).total_seconds())

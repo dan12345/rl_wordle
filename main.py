@@ -42,6 +42,7 @@ save_dir.mkdir(parents=True)
 debug = False
 pre_calc_guess_emb = True
 more_greedy_exploration = False
+apply_reward_fix = False
 device = 'cpu'
 if torch.cuda.is_available():
     device = 'cuda'
