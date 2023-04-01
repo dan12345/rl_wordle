@@ -34,21 +34,21 @@ log_every = 10000
 burnin = 5000
 learn_every = 3
 exploration_rate_decay = 0.9999
-exploration_rate_min = 0.08
-batch_size = 32
+exploration_rate_min = 0.11
+batch_size = 64
 memory_size = 5000
 save_dir = Path("checkpoints") / datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 save_dir.mkdir(parents=True)
 debug = False
 pre_calc_guess_emb = True
-more_greedy_exploration = False
+more_greedy_exploration = True
 apply_reward_fix = False
 device = 'cpu'
 if torch.cuda.is_available():
     device = 'cuda'
 average_out_words = False
 max_turn_to_give_non_success_rewards = -1
-sample_from_top_n = -1
+sample_from_top_n = 10
 # create config variable from global variables (except for those starting with _)
 def override_config():
     for arg in sys.argv[1:]:
@@ -85,9 +85,9 @@ env = WordleEnvironment(config)
 # print("evaluating greedy agent")
 # __ = evaluate_player(greedy_agent, env, should_print=True)
 #
-# expectation_player = ExpectationPlayer(config)
-# print("evaluating expectation agent")
-# __ = evaluate_player(expectation_player, env, should_print=True)
+expectation_player = ExpectationPlayer(config)
+print("evaluating expectation agent")
+__ = evaluate_player(expectation_player, env, should_print=True)
 
 # now train RL agent
 agent = GreedyWordlePlayer(config) if config['greedy_player'] else RLPlayer(config, device)
