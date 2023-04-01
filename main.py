@@ -85,9 +85,9 @@ env = WordleEnvironment(config)
 # print("evaluating greedy agent")
 # __ = evaluate_player(greedy_agent, env, should_print=True)
 #
-expectation_player = ExpectationPlayer(config)
-print("evaluating expectation agent")
-__ = evaluate_player(expectation_player, env, should_print=True)
+# expectation_player = ExpectationPlayer(config)
+# print("evaluating expectation agent")
+# __ = evaluate_player(expectation_player, env, should_print=True)
 
 # now train RL agent
 agent = GreedyWordlePlayer(config) if config['greedy_player'] else RLPlayer(config, device)
