@@ -61,11 +61,11 @@ class RLPlayer:
             self.word2tensor = {}
             possible_evals = ["".join(eval) for eval in itertools.product(EVAL_CHARS, repeat=config['word_len'])]
             for word in self.possible_guesses + possible_evals:
-                t = torch.zeros(len(ABC+EVAL_CHARS) * config['word_len'], dtype=torch.float32, requires_grad=False)
+                t = torch.zeros(len(ABC+EVAL_CHARS) * config['word_len'], dtype=torch.float32, requires_grad=False, device=device)
                 for i in range(len(word)):
                     t[char_to_idx_for_encode[word[i]] * config['word_len'] + i] = 1
                 self.word2tensor[word] = t
-            self.padding_tensor = torch.zeros(len(ABC+EVAL_CHARS) * config['word_len'], dtype=torch.float32)
+            self.padding_tensor = torch.zeros(len(ABC+EVAL_CHARS) * config['word_len'], dtype=torch.float32, device=device)
 
     def learn(self):
         if self.curr_step % self.config['sync_every'] == 0:
