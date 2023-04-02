@@ -3,7 +3,7 @@ import torch
 import math
 from torch.nn import functional as F
 
-from utils import ABC, CHARS, PADDING, START_TOKEN
+from utils import ABC, CHARS, PADDING, START_TOKEN, EVAL_CHARS
 
 
 class TransformerModel(nn.Module):
@@ -12,10 +12,14 @@ class TransformerModel(nn.Module):
         super().__init__()
         self.config = config
         n_guesses = len(possible_guesses)
-        self.token_embedding_table = nn.Embedding(n_chars, config['n_embd'])
+        if not config['encode_as_char_positions']:
+            self.token_embedding_table = nn.Embedding(n_chars, config['n_embd'])
         # each round need double the characters in order to contain eval result
         if config['average_out_words']:
             self.max_sequence_size = config['word_len'] * 2
+        elif config['encode_as_char_positions']:
+            self.max_sequence_size = 2 * config['rounds_to_failure'] + 1
+            self.input_to_token_embedding = nn.Linear(len(ABC + EVAL_CHARS)*config['word_len'], config['n_embd'])
         else:
             self.max_sequence_size = config['word_len'] * 2 * config['rounds_to_failure'] + 1
         self.position_embedding_table = nn.Embedding(self.max_sequence_size, config['n_embd'])
@@ -25,11 +29,10 @@ class TransformerModel(nn.Module):
         if config['pre_calc_guess_emb']:
             # create a matrix where each row represents a binary vector of a possible guess based on the its character breakdown
             self.guess_embedding_table = torch.zeros(n_guesses, len(ABC) * config['word_len'], device=device, requires_grad=False)
+            char_to_idx_for_encode = {char: idx for idx, char in enumerate(ABC)}
             for i, guess in enumerate(possible_guesses):
-                for j, c in enumerate(ABC):
-                    for k in range(config['word_len']):
-                        if guess[k] == c:
-                            self.guess_embedding_table[i][j * config['word_len'] + k] = 1
+                for j in range(config['word_len']):
+                    self.guess_embedding_table[i][char_to_idx_for_encode[guess[j]] * config['word_len'] + j] = 1
 
             # projection to let the model decide how it want to use the precalced embeddings
             self.proj = nn.Linear(len(ABC) * config['word_len'], config['n_embd'])
@@ -49,11 +52,16 @@ class TransformerModel(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, states, lens):
-        B, T = states.shape
+        batch_size = states.shape[0]
         # idx and targets are both (B,T) tensor of integers
         if self.config['average_out_words']:
             states, n_words_mini_states = self.build_new_states(states, lens)
-        tok_emb = self.token_embedding_table(states)  # (B,T,C)
+
+        if self.config['encode_as_char_positions']:
+            tok_emb = self.input_to_token_embedding(states)  # (B,T,C)
+            lens = (lens - 1) // self.config['word_len'] + 1
+        else:
+            tok_emb = self.token_embedding_table(states)  # (B,T,C)
         pos_emb = self.position_embedding_table(torch.arange(self.max_sequence_size, device=self.device))  # (T,C)
         x = tok_emb + pos_emb  # (B,T,C)
         x = self.blocks(x)  # (B,T,C)
@@ -63,7 +71,7 @@ class TransformerModel(nn.Module):
             x = x[:, -1, :]  # (B,C)
             x = self.average_out_mini_states(x, n_words_mini_states)
         else:
-            x = x[torch.arange(B), lens - 1, :]  # (B,C)
+            x = x[torch.arange(batch_size), lens - 1, :]  # (B,C)
         if self.config['pre_calc_guess_emb']:
             guess_embeddings = self.proj(self.guess_embedding_table)  # (n_guesses, C)
             logits = x @ guess_embeddings.t()  # (B,T,n_guesses)

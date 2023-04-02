@@ -7,6 +7,7 @@ from models import TransformerModel
 from utils import get_words, CHARS, START_TOKEN, ABC
 import copy
 import random
+import itertools
 
 EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the solution
 PADDING = '.'
@@ -55,6 +56,16 @@ class RLPlayer:
         self.guess_to_idx = {guess: idx for idx, guess in enumerate(self.possible_guesses)}
         self.curr_step = 0
         self.memory = deque(maxlen=config['memory_size'])
+        if config['encode_as_char_positions']:
+            char_to_idx_for_encode = {char: idx for idx, char in enumerate(ABC+EVAL_CHARS)}
+            self.word2tensor = {}
+            possible_evals = ["".join(eval) for eval in itertools.product(EVAL_CHARS, repeat=config['word_len'])]
+            for word in self.possible_guesses + possible_evals:
+                t = torch.zeros(len(ABC+EVAL_CHARS) * config['word_len'], dtype=torch.float32, requires_grad=False)
+                for i in range(len(word)):
+                    t[char_to_idx_for_encode[word[i]] * config['word_len'] + i] = 1
+                self.word2tensor[word] = t
+            self.padding_tensor = torch.zeros(len(ABC+EVAL_CHARS) * config['word_len'], dtype=torch.float32)
 
     def learn(self):
         if self.curr_step % self.config['sync_every'] == 0:
@@ -112,6 +123,12 @@ class RLPlayer:
             return self.exploration_rate / 2  # half-and-half
 
     def encode(self, state):
+        if self.config['encode_as_char_positions']:
+            split_words = [state[i:i + self.config['word_len']] for i in range(1, len(state), self.config['word_len'])]
+            split_tensors = [self.word2tensor[word] for word in split_words]
+            num_padding_tensors_needed = self.config['rounds_to_failure']*2 - len(split_words)
+            return torch.stack([self.padding_tensor, *split_tensors, *[self.padding_tensor]*num_padding_tensors_needed])
+
         tensor = torch.tensor([self.char_to_idx[c] for c in state], requires_grad=False).to(self.device)
         # pad tensor to max length
         max_len = self.config['word_len'] * 2 * self.config['rounds_to_failure'] + 1

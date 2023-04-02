@@ -44,6 +44,7 @@ pre_calc_guess_emb = True
 more_greedy_exploration = True
 apply_reward_fix = False
 device = 'cpu'
+encode_as_char_positions = False
 if torch.cuda.is_available():
     device = 'cuda'
 average_out_words = False
