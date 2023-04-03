@@ -136,5 +136,5 @@ if __name__ == '__main__':
     #!craneGGWWWcrispGGWWWcrispGGWWWcrossGGWWWcrudeGGGWWagony
     #!crateWWYWGadageGWWWGabodeGGGWGabodeGGGWGabodeGGGWGcrowd reward is -15 solution is above
     #debug_q_values_of_saved_model('!crateGGGGY', dir_name, file)
-    continue_training('checkpoints/best_all_words_3_4/', '0526.chkpt')
+    continue_training('checkpoints/best_all_words_3_4/', '1218.chkpt')
     print((datetime.datetime.now() - now).total_seconds())
