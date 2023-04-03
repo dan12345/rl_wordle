@@ -20,7 +20,7 @@ reward_success = 15
 reward_failure = -15
 reward_yellow = 0.2
 reward_green = 0.5
-num_words_to_take = 100
+num_words_to_take = -1
 rounds_to_failure = 6
 sync_every = 1000
 lr = 0.00025
@@ -32,11 +32,11 @@ dropout = 0
 save_every = 100000
 log_every = 10000
 burnin = 5000
-learn_every = 3
+learn_every = 70
 exploration_rate_decay = 0.9999
 exploration_rate_min = 0.11
-batch_size = 64
-memory_size = 5000
+batch_size = 2048
+memory_size = 20000
 save_dir = Path("checkpoints") / datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 save_dir.mkdir(parents=True)
 debug = False
@@ -44,12 +44,13 @@ pre_calc_guess_emb = True
 more_greedy_exploration = True
 apply_reward_fix = False
 device = 'cpu'
-encode_as_char_positions = False
+encode_as_char_positions = True
 if torch.cuda.is_available():
     device = 'cuda'
 average_out_words = False
 max_turn_to_give_non_success_rewards = -1
 sample_from_top_n = 10
+should_repeat_failures = False
 # create config variable from global variables (except for those starting with _)
 def override_config():
     for arg in sys.argv[1:]:

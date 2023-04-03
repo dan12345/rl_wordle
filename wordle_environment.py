@@ -19,9 +19,10 @@ class WordleEnvironment:
         self.nround = 0
         self.config = config
 
-    def reset(self, sol=None):
+    def reset(self, sol=None, repeat_last_solution=False):
         """Initializes a new game with a random solution"""
-        self.solution = random.choice(self.valid_solutions) if sol is None else sol
+        if not repeat_last_solution:
+            self.solution = random.choice(self.valid_solutions) if sol is None else sol
         self.nround = 0
         self.state = START_TOKEN
         return self.state

@@ -10,8 +10,10 @@ def train_player(agent, env, config, save_dir):
     if config['greedy_player']:
         return
     logger = MetricLogger(save_dir, config)
+    percent_win = 0
+    repeat_last_solution = False
     for e in range(config['num_episodes_to_train']):
-        state = env.reset()
+        state = env.reset(repeat_last_solution=repeat_last_solution)
         n_turn = 0
         while True:
             action = agent.act(state, n_turn)
@@ -25,6 +27,11 @@ def train_player(agent, env, config, save_dir):
             logger.log_step(reward, loss, q)
             state = next_state
             if done:
+                # repeat the last failure with some probability to focus on hard words. Reduce 0.2 to not overdo it
+                if config['should_repeat_failures'] and reward < 0 and np.random.rand() < percent_win/100-0.2:
+                    repeat_last_solution = True
+                else:
+                    repeat_last_solution = False
                 break
         logger.log_episode()
         if e % config['log_every'] == 0 and e > 0:
