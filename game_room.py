@@ -3,7 +3,7 @@ import json
 from metric_logger import MetricLogger
 from rl_player import RLPlayer
 from wordle_environment import WordleEnvironment
-
+from pathlib import Path
 
 def train_player(agent, env, config, save_dir):
     """ train loop adapted from https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html"""
@@ -116,17 +116,24 @@ def debug_q_values_of_saved_model(s, save_dir, checkpoint):
     for word, q in sorted(words_qs, key=lambda x: x[1], reverse=True):
         print(f"{word} {q}")
 
+def continue_training(save_dir, checkpoint):
+    with open(save_dir + "/config", 'r') as f:
+        config = json.load(f)
+    config['should_repeat_failures'] = False
+    env = WordleEnvironment(config)
+    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    train_player(agent, env, config, Path(save_dir))
 
 if __name__ == '__main__':
     # evaluate_saved_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt', 5000)
 
     import datetime
     now = datetime.datetime.now()
-    dir_name = 'checkpoints/best_100_93_2/'
-    file = 'april_1st_93_2.chkpt'
+    # dir_name = 'checkpoints/best_100_93_2/'
+    # file = 'april_1st_93_2.chkpt'
     # evaluate_saved_player(dir_name, file)
     #!craneGGWWWcrispGGWWWcrispGGWWWcrossGGWWWcrudeGGGWWagony
     #!crateWWYWGadageGWWWGabodeGGGWGabodeGGGWGabodeGGGWGcrowd reward is -15 solution is above
-    debug_q_values_of_saved_model('!crateGGGGY', dir_name, file)
-
+    #debug_q_values_of_saved_model('!crateGGGGY', dir_name, file)
+    continue_training('checkpoints/best_all_words_3_4/', '0526.chkpt')
     print((datetime.datetime.now() - now).total_seconds())

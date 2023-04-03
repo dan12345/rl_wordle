@@ -9,6 +9,7 @@ import copy
 import random
 import itertools
 
+
 EVAL_CHARS = 'WYG'  # the characters used to evaluate a guess compared to the solution
 PADDING = '.'
 chars = PADDING + ABC + EVAL_CHARS + START_TOKEN
