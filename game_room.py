@@ -4,6 +4,8 @@ from metric_logger import MetricLogger
 from rl_player import RLPlayer
 from wordle_environment import WordleEnvironment
 from pathlib import Path
+import argparse
+
 
 def train_player(agent, env, config, save_dir):
     """ train loop adapted from https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html"""
@@ -130,11 +132,27 @@ if __name__ == '__main__':
 
     import datetime
     now = datetime.datetime.now()
-    # dir_name = 'checkpoints/best_100_93_2/'
-    # file = 'april_1st_93_2.chkpt'
-    # evaluate_saved_player(dir_name, file)
-    #!craneGGWWWcrispGGWWWcrispGGWWWcrossGGWWWcrudeGGGWWagony
-    #!crateWWYWGadageGWWWGabodeGGGWGabodeGGGWGabodeGGGWGcrowd reward is -15 solution is above
-    #debug_q_values_of_saved_model('!crateGGGGY', dir_name, file)
-    continue_training('checkpoints/best_all_words_3_4/', '1218.chkpt')
+
+    parser = argparse.ArgumentParser(description='RL game room')
+
+    parser.add_argument('-m', '--chkpt', type=str, help='Name of chkpt file')
+    parser.add_argument('-d', '--dir', type=str,  help='directory of chkpt file')
+    parser.add_argument('-a', '--action', type=str,  help='which action to perform')
+    parser.add_argument('-s', '--state', type=str,   help='state for debug')
+
+    args = parser.parse_args()
+
+    assert(args.dir is not None)
+    assert(args.chkpt is not None)
+    assert(args.action is not None)
+
+    if args.action == 'evaluate':
+        evaluate_saved_player(args.dir, args.chkpt)
+    elif args.action == 'play':
+        play_against_player(args.dir, args.chkpt)
+    elif args.action == 'debug':
+        assert(args.state is not None)
+        debug_q_values_of_saved_model(args.state, args.dir, args.chkpt)
+    elif args.action == 'continue':
+        continue_training(args.dir, args.chkpt)
     print((datetime.datetime.now() - now).total_seconds())
