@@ -79,6 +79,7 @@ def evaluate_saved_player(save_dir, checkpoint):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
     print(config)
+    config['save_dir'] = save_dir
     env = WordleEnvironment(config)
     agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
     evaluate_player(agent, env, should_print=True, print_failures=True)
