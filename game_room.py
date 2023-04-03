@@ -122,11 +122,12 @@ def debug_q_values_of_saved_model(s, save_dir, checkpoint):
 def continue_training(save_dir, checkpoint):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
-    config['save_dir'] = save_dir
+    path = Path(save_dir)
+    config['save_dir'] = path
     config['should_repeat_failures'] = False
     env = WordleEnvironment(config)
     agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
-    train_player(agent, env, config, Path(save_dir))
+    train_player(agent, env, config, path)
 
 if __name__ == '__main__':
     # evaluate_saved_player('checkpoints/2023-03-20T08-53-12', 'wordle_net_55.chkpt', 5000)
@@ -148,7 +149,6 @@ if __name__ == '__main__':
     assert(args.action is not None)
 
     if args.action == 'evaluate':
-        evaluate_saved_player(args.dir, args.chkpt)
         evaluate_saved_player(args.dir, args.chkpt)
     elif args.action == 'play':
         play_against_player(args.dir, args.chkpt)
