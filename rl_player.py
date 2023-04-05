@@ -51,6 +51,7 @@ class RLPlayer:
             checkpoint = torch.load(load_path, map_location=map_location)
             self.net.load_state_dict(checkpoint['model'])
             self.exploration_rate = checkpoint['exploration_rate']
+            print(f"loading saved checkpoint, device is {device}, exploration rate is {self.exploration_rate} model params are on {next(self.net.parameters()).device}")
         self.optimizer = torch.optim.Adam(self.net.parameters(), config['lr'])
         self.exploration_rate = 1
         self.char_to_idx = {char: idx for idx, char in enumerate(CHARS)}
