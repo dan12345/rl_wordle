@@ -85,7 +85,7 @@ def evaluate_saved_player(save_dir, checkpoint):
     env = WordleEnvironment(config)
     if torch.cuda.is_available():
         device = 'cuda'
-    else
+    else:
         device='cpu'
     agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
     evaluate_player(agent, env, should_print=True, print_failures=True)
