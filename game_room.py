@@ -5,7 +5,7 @@ from rl_player import RLPlayer
 from wordle_environment import WordleEnvironment
 from pathlib import Path
 import argparse
-
+import torch
 
 def train_player(agent, env, config, save_dir):
     """ train loop adapted from https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html"""
@@ -83,6 +83,10 @@ def evaluate_saved_player(save_dir, checkpoint):
     print(config)
     config['save_dir'] = save_dir
     env = WordleEnvironment(config)
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else
+        device='cpu'
     agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
     evaluate_player(agent, env, should_print=True, print_failures=True)
 
