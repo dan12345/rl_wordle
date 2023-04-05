@@ -77,25 +77,21 @@ def evaluate_player(player, env, should_print=False, print_failures=False):
     return percent_win, average_win_len
 
 
-def evaluate_saved_player(save_dir, checkpoint):
+def evaluate_saved_player(save_dir, checkpoint, device):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
     print(config)
     config['save_dir'] = save_dir
     env = WordleEnvironment(config)
-    if torch.cuda.is_available():
-        device = 'cuda'
-    else:
-        device = 'cpu'
     agent = RLPlayer(config, device, save_dir + "/" + checkpoint)
     evaluate_player(agent, env, should_print=True, print_failures=True)
 
 
-def play_against_player(save_dir, checkpoint):
+def play_against_player(save_dir, checkpoint, device):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
 
-    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    agent = RLPlayer(config, device, save_dir + "/" + checkpoint)
     n_turn = 0
     success = False
     print("think of a 5 letter word, I will try to guess it")
@@ -114,23 +110,23 @@ def play_against_player(save_dir, checkpoint):
         print(f"I lose! :(")
 
 
-def debug_q_values_of_saved_model(s, save_dir, checkpoint):
+def debug_q_values_of_saved_model(s, save_dir, checkpoint, device):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
-    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    agent = RLPlayer(config, device, save_dir + "/" + checkpoint)
     words_qs = agent.debug_q_values_of_state(s)
     print(f"for state {s} the q values are: ")
     for word, q in sorted(words_qs, key=lambda x: x[1], reverse=True):
         print(f"{word} {q}")
 
-def continue_training(save_dir, checkpoint):
+def continue_training(save_dir, checkpoint, device):
     with open(save_dir + "/config", 'r') as f:
         config = json.load(f)
     path = Path(save_dir)
     config['save_dir'] = path
     config['should_repeat_failures'] = False
     env = WordleEnvironment(config)
-    agent = RLPlayer(config, 'cpu', save_dir + "/" + checkpoint)
+    agent = RLPlayer(config, device, save_dir + "/" + checkpoint)
     train_player(agent, env, config, path)
 
 if __name__ == '__main__':
@@ -151,14 +147,17 @@ if __name__ == '__main__':
     assert(args.dir is not None)
     assert(args.chkpt is not None)
     assert(args.action is not None)
-
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
     if args.action == 'evaluate':
-        evaluate_saved_player(args.dir, args.chkpt)
+        evaluate_saved_player(args.dir, args.chkpt, device)
     elif args.action == 'play':
-        play_against_player(args.dir, args.chkpt)
+        play_against_player(args.dir, args.chkpt, device)
     elif args.action == 'debug':
         assert(args.state is not None)
-        debug_q_values_of_saved_model(args.state, args.dir, args.chkpt)
+        debug_q_values_of_saved_model(args.state, args.dir, args.chkpt, device)
     elif args.action == 'continue':
-        continue_training(args.dir, args.chkpt)
+        continue_training(args.dir, args.chkpt, device)
     print((datetime.datetime.now() - now).total_seconds())
